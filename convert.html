@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>For Yahoo....</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<style>
+body {
+	font-family: arial;
+}
+table {
+	border: 1px solid gray;
+	margin-bottom: 40px;
+}
+tr td {
+	border: 1px solid gray;
+}
+
+fieldset{
+	padding-top: 40px;
+	padding-bottom: 40px;
+	margin-bottom: 30px;
+}
+
+#email-desktop{
+	margin-top: 20px;
+}
+#output-toppage-html {
+	width: 100%;
+	height: 100px;
+}
+#output-email-desktop-html {
+	width: 100%;
+	height: 100px;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="./jquery.csv.min.js"></script>
+<script type="text/javascript">
+	MP = {};
+	MP.Templates = {};
+	$(document).ready(function() {
+
+		// The event listener for the file upload
+		$('.csvFileUpload').on('change', uploadCsv);
+		document.getElementById('emailTemplateFileUpload').addEventListener('change', templateUpload, false);
+		$('#convert-toppage').on('click', convertToTopPageHTML);
+		$('#convert-email-desktop').on('click', convertToEmailDesktopHTML);
+
+		// Method that checks that the browser supports the HTML5 File API
+		function browserSupportFileUpload() {
+			var isCompatible = false;
+			if (window.File && window.FileReader && window.FileList && window.Blob) {
+				isCompatible = true;
+			}
+			return isCompatible;
+		};
+
+		function convertToTopPageHTML(){
+			var template = $('#template-boutique-div').html();
+			var $output = $('<div />');
+			$.each(MP.Templates.csvData, function(index, row){
+				// skip the first header row (that contains the column names)
+				if(index > 0){
+					var $boutique = $(template).clone();
+
+					// decide the float direction for this div
+					// var style = $boutique.attr('style');
+					// $boutique.attr('style', style.replace("{{float}}", (index % 2 == 1 ? 'left' : 'right')));
+
+					// replace pageid
+					var href = $boutique.find('a').attr('href');
+					$boutique.find('a').attr('href', href.replace("{{pageid}}", row[0]));
+
+					// replace imagename
+					var src = $boutique.find('img').attr('src');
+					$boutique.find('img').attr('src', src.replace("{{imagename}}", row[1]));
+
+					// replace salesname
+					$boutique.find('.sale-name').text(row[2]);
+
+					$output.append($boutique);
+				}
+			});
+			$('#output-toppage-html').text($output[0].outerHTML);
+		};
+
+		function convertToEmailDesktopHTML(csvData, templateData){
+			var $output = $('<div />').html($(MP.Templates.emailDesktop));
+			var $template = $output.find('#sale-list .sale-tr');
+
+			$output.find('#sale-list > tbody').html('');
+			$.each(MP.Templates.csvData, function(index, row){
+				// skip the first header row (that contains the column names)
+				if(index > 0){
+					var $sale = $template.clone();
+
+					// replace pageid
+					var href = $sale.find('a').attr('href');
+					$sale.find('a').attr('href', href.replace("{{pageid}}", row[0]));
+
+					// replace imagename
+					var src = $sale.find('img').attr('src');
+					$sale.find('img').attr('src', src.replace("{{imagename}}", row[1]));
+
+					// replace salesname
+					$sale.find('.sale-name').text(row[2]);
+
+					$output.find('#sale-list > tbody').append($sale);
+				}
+			});
+
+			$('#output-email-desktop-html').text($output.html());
+		}
+
+		// Method that reads and processes the selected file
+		function uploadCsv(evt) {
+			if(!browserSupportFileUpload()) {
+				alert('The file APIs are not fully supported in this browser!');
+			}
+			else {
+				var data = null;
+				var file = evt.target.files[0];
+				var reader = new FileReader();
+				reader.readAsText(file);
+				reader.onload = function(event){
+					var csvData = event.target.result;
+					data = $.csv.toArrays(csvData);
+					if(data && data.length > 0){
+						console.log("Imported = " + data.length + " - rows successfully!");
+						MP.Templates.csvData = data;
+					}
+					else{
+						alert("no data to import!")
+					}
+				};
+				reader.onerror = function(){
+					alert('Unabled to read' + file.fileName);
+				}
+			}
+		};
+
+		function templateUpload(evt){
+			if(!browserSupportFileUpload()) {
+				alert('The file APIs are not fully supported in this browser!');
+			}
+			else {
+				var data = null;
+				var file = evt.target.files[0];
+				var reader = new FileReader();
+				reader.readAsText(file);
+				reader.onload = function(event){
+					MP.Templates.emailDesktop = event.target.result;
+				};
+				reader.onerror = function(){
+					alert('Unabled to read' + file.fileName);
+				}
+			}
+		};
+	});
+</script>
+<script id="template-boutique-div" type="text/custom-template">
+	<div style="width:33.3333%;display:inline-block;padding:7px;padding-top:30px;box-sizing:border-box;">
+		<a href="http://store.shopping.yahoo.co.jp/milleporte-popup/{{pageid}}.html" style="display:block;">
+		<img src="http://shopping.c.yimg.jp/lib/milleporte-popup/{{imagename}}" style="width: 100%; height:auto;" />
+		</a>
+		<div class="sale-name" style="text-align:center;font-size:0.8em;letter-spacing:0.6px;text-transform:uppercase;font-family:'DINPro','Open Sans','Avenir','Helvetica Neue','Helvetica','Hiragino Kaku Gothic Pro','Meiryo','MS UI Gothic','MS PGothic',Arial,sans-serif;"></div>
+	</div>
+</script>
+</script>
+
+</head>
+	<body class="container">
+		<div id="dvImportSegments" class="fileupload ">
+			<div>
+				<h4>Format Example</h4>
+				<table>
+					<thead>
+						<tr>
+							<td>pageid</td>
+							<td>imagename</td>
+							<td>salename</td>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>pierreherm</td>
+							<td>topic1.jpg</td>
+							<td>PIERRE HERME PARIS</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		    <fieldset>
+		        <legend>Convert Top Page HTML</legend>
+		        <div class="form-group">
+	        		<label>Upload your CSV File</label>
+	            	<input type="file" name="File Upload" class="csvFileUpload" accept=".csv" />
+	        	</div>
+	        	<input type="button" id="convert-toppage" class="btn btn-default btn-info" value="Convert to Top page HTML" />
+			   <div>
+			   		<label>Top Page HTML Output:</label>
+			   		<textarea id="output-toppage-html"></textarea>
+			   </div>
+		   </fieldset>
+
+		   <fieldset>
+		   		<legend>Convert Email</legend>
+			   <div class="form-group">
+			   	<label>1. Choose CSV File:</label><input type="file" name="File Upload" class="csvFileUpload" accept=".csv" />
+				</div>
+			   <div class="form-group">
+			   	<label>2. Choose Email Template File:</label><input type="file" name="File Upload" id="emailTemplateFileUpload" />
+				</div>
+			   <input type="button" id="convert-email-desktop" class="btn btn-default btn-info" value="Convert to Email Desktop" />
+			   <div id="email-desktop">
+			   		<label>Eamil HTML (Desktop) Output:</label>
+			   		<textarea id="output-email-desktop-html"></textarea>
+			   </div>
+			</fieldset>
+		</div>
+	</body>
+</html>
